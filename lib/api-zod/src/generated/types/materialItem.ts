@@ -5,19 +5,6 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-export interface HealthStatus {
-  status: string;
-}
-
-export interface EstimateRequest {
-  /** Description of the construction or renovation job */
-  jobDescription: string;
-  /**
-     * Optional location for regional pricing context (e.g., "Texas", "California")
-     * @nullable
-     */
-  location?: string | null;
-}
 
 export interface MaterialItem {
   id: string;
@@ -43,19 +30,3 @@ export interface MaterialItem {
      */
   notes?: string | null;
 }
-
-export interface EstimateResult {
-  /** AI summary of the job */
-  jobSummary: string;
-  materials: MaterialItem[];
-  /** Total cost of all materials in USD */
-  grandTotal: number;
-  /** Pricing disclaimer */
-  disclaimer: string;
-}
-
-export interface ErrorResponse {
-  error: string;
-  message: string;
-}
-
