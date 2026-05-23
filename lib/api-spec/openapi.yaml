@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: estimates
+    description: Material cost estimate operations
 paths:
   /healthz:
     get:
@@ -24,6 +26,37 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /estimates/generate:
+    post:
+      operationId: generateEstimate
+      tags: [estimates]
+      summary: Generate a material cost estimate
+      description: Uses AI to generate an itemized material list with pricing from a job description
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EstimateRequest"
+      responses:
+        "200":
+          description: Generated estimate
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EstimateResult"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +66,87 @@ components:
           type: string
       required:
         - status
-
+    EstimateRequest:
+      type: object
+      properties:
+        jobDescription:
+          type: string
+          description: Description of the construction or renovation job
+        location:
+          type: ["string", "null"]
+          description: Optional location for regional pricing context (e.g., "Texas", "California")
+      required:
+        - jobDescription
+    MaterialItem:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+          description: Material name
+        description:
+          type: string
+          description: Brief description or specification
+        category:
+          type: string
+          description: Material category (e.g., "Lumber", "Concrete", "Hardware")
+        quantity:
+          type: number
+          description: Amount needed
+        unit:
+          type: string
+          description: Unit of measurement (e.g., "sq ft", "pieces", "bags", "gallons")
+        unitPrice:
+          type: number
+          description: Price per unit in USD
+        totalPrice:
+          type: number
+          description: Total price for this line item in USD
+        storeName:
+          type: string
+          description: Suggested retail store (e.g., "Home Depot", "Lowe's")
+        notes:
+          type: ["string", "null"]
+          description: Any additional notes about this material
+      required:
+        - id
+        - name
+        - description
+        - category
+        - quantity
+        - unit
+        - unitPrice
+        - totalPrice
+        - storeName
+    EstimateResult:
+      type: object
+      properties:
+        jobSummary:
+          type: string
+          description: AI summary of the job
+        materials:
+          type: array
+          items:
+            $ref: "#/components/schemas/MaterialItem"
+        grandTotal:
+          type: number
+          description: Total cost of all materials in USD
+        disclaimer:
+          type: string
+          description: Pricing disclaimer
+      required:
+        - jobSummary
+        - materials
+        - grandTotal
+        - disclaimer
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      required:
+        - error
+        - message
