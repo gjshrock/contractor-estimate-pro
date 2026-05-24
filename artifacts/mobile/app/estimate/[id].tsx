@@ -26,12 +26,16 @@ function SummaryView({
   grandTotal,
   markup,
   onMarkupChange,
+  notes,
+  onNotesChange,
 }: {
   materials: MaterialItem[];
   labor: LaborEstimate | null;
   grandTotal: number;
   markup: number;
   onMarkupChange: (v: number) => void;
+  notes: string;
+  onNotesChange: (v: string) => void;
 }) {
   const colors = useColors();
   const [inputVal, setInputVal] = useState(markup > 0 ? String(markup) : "");
@@ -170,11 +174,28 @@ function SummaryView({
         </View>
       )}
 
+      {/* Notes */}
+      <View style={[summaryStyles.notesCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={[summaryStyles.notesHeader, { borderBottomColor: notes.length > 0 ? colors.border : "transparent" }]}>
+          <Feather name="edit-3" size={13} color={colors.mutedForeground} />
+          <Text style={[summaryStyles.notesTitle, { color: colors.mutedForeground }]}>Notes</Text>
+        </View>
+        <TextInput
+          style={[summaryStyles.notesInput, { color: colors.foreground }]}
+          value={notes}
+          onChangeText={onNotesChange}
+          placeholder="Client name, job site address, special conditions…"
+          placeholderTextColor={colors.mutedForeground}
+          multiline
+          textAlignVertical="top"
+          returnKeyType="done"
+          blurOnSubmit
+        />
+      </View>
+
       {/* Final total */}
       <View style={[summaryStyles.totalRow, { backgroundColor: colors.primary }]}>
-        <Text style={summaryStyles.totalLabel}>
-          Total Quote
-        </Text>
+        <Text style={summaryStyles.totalLabel}>Total Quote</Text>
         <Text style={summaryStyles.totalAmount}>
           ${finalTotal.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </Text>
@@ -313,17 +334,23 @@ export default function EstimateDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { getEstimate, removeMaterialFromEstimate, updateMarkup } = useEstimates();
+  const { getEstimate, removeMaterialFromEstimate, updateMarkup, updateNotes } = useEstimates();
 
   const estimateData = getEstimate(id ?? "");
   const [materials, setMaterials] = useState(estimateData?.materials ?? []);
   const [grandTotal, setGrandTotal] = useState(estimateData?.grandTotal ?? 0);
   const [markup, setMarkup] = useState(estimateData?.markup ?? 0);
+  const [notes, setNotes] = useState(estimateData?.notes ?? "");
   const [view, setView] = useState<"summary" | "detail">("summary");
 
   const handleMarkupChange = (v: number) => {
     setMarkup(v);
     if (id) updateMarkup(id, v);
+  };
+
+  const handleNotesChange = (v: string) => {
+    setNotes(v);
+    if (id) updateNotes(id, v);
   };
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
@@ -428,6 +455,8 @@ export default function EstimateDetailScreen() {
             grandTotal={grandTotal}
             markup={markup}
             onMarkupChange={handleMarkupChange}
+            notes={notes}
+            onNotesChange={handleNotesChange}
           />
         ) : (
           <DetailView
@@ -550,6 +579,33 @@ const summaryStyles = StyleSheet.create({
   presetText: {
     fontSize: 12,
     fontFamily: "Inter_600SemiBold",
+  },
+  notesCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    overflow: "hidden",
+  },
+  notesHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+  },
+  notesTitle: {
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
+  notesInput: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    lineHeight: 19,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    minHeight: 60,
   },
   totalRow: {
     borderRadius: 14,

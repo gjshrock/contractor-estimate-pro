@@ -70,6 +70,15 @@ export function EstimateCard({ estimate, onDelete }: Props) {
         {estimate.jobSummary}
       </Text>
 
+      {estimate.notes ? (
+        <View style={[styles.notesRow, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+          <Feather name="edit-3" size={11} color={colors.mutedForeground} />
+          <Text style={[styles.notesText, { color: colors.mutedForeground }]} numberOfLines={1}>
+            {estimate.notes}
+          </Text>
+        </View>
+      ) : null}
+
       <View style={styles.footer}>
         <View style={styles.meta}>
           <Feather name="package" size={12} color={colors.mutedForeground} />
@@ -142,6 +151,22 @@ const styles = StyleSheet.create({
   metaText: {
     fontSize: 12,
     fontFamily: "Inter_400Regular",
+  },
+  notesRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    borderRadius: 6,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    alignSelf: "flex-start",
+    maxWidth: "100%",
+  },
+  notesText: {
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+    flexShrink: 1,
   },
   totalBadge: {
     marginLeft: "auto",

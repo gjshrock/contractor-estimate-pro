@@ -99,6 +99,7 @@ export default function NewEstimateScreen() {
         grandTotal: data.grandTotal,
         laborEstimate: data.laborEstimate ?? null,
         markup: 0,
+        notes: "",
         disclaimer: data.disclaimer,
         createdAt: new Date().toISOString(),
       };
