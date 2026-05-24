@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Constants from "expo-constants";
+import { getApiBase } from "@/utils/api";
 import { useContractorProfile } from "@/context/ContractorProfileContext";
 import { useEstimates, type Estimate, type LaborEstimate, type MaterialItem } from "@/context/EstimatesContext";
 import { useColors } from "@/hooks/useColors";
@@ -59,7 +59,7 @@ export default function NewEstimateScreen() {
     try {
       setLoadingStep(isProfileSet ? "Generating material & labor estimates..." : "Generating material list...");
 
-      const base = (Constants.expoConfig?.extra?.apiUrl as string | undefined) ?? "";
+      const base = getApiBase();
 
       const body: Record<string, unknown> = {
         jobDescription: desc,
