@@ -78,44 +78,14 @@ function SummaryView({
         ))}
       </View>
 
-      {/* Labor summary */}
+      {/* Labor — customer-facing only shows the cost, no rate/hours/experience */}
       {labor && (
         <View style={[summaryStyles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={[summaryStyles.cardHeader, { borderBottomColor: colors.border }]}>
-            <Text style={[summaryStyles.cardTitle, { color: colors.foreground }]}>Labor</Text>
-            <Text style={[summaryStyles.cardHeaderTotal, { color: colors.mutedForeground }]}>
+          <View style={summaryStyles.catRow}>
+            <Text style={[summaryStyles.catName, { color: colors.foreground }]}>Labor</Text>
+            <Text style={[summaryStyles.catTotal, { color: colors.foreground }]}>
               ${labor.totalLaborCost.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </Text>
-          </View>
-          <View style={summaryStyles.laborRow}>
-            <View style={summaryStyles.laborStat}>
-              <Text style={[summaryStyles.laborStatVal, { color: colors.foreground }]}>
-                {labor.adjustedHours.toFixed(1)}h
-              </Text>
-              <Text style={[summaryStyles.laborStatLabel, { color: colors.mutedForeground }]}>
-                est. hours
-              </Text>
-            </View>
-            <View style={[summaryStyles.laborDivider, { backgroundColor: colors.border }]} />
-            <View style={summaryStyles.laborStat}>
-              <Text
-                style={[
-                  summaryStyles.laborStatVal,
-                  { color: isFaster ? colors.success : colors.destructive },
-                ]}
-              >
-                {isFaster ? `-${speedPct}%` : `+${speedPct}%`}
-              </Text>
-              <Text style={[summaryStyles.laborStatLabel, { color: colors.mutedForeground }]}>
-                vs. avg
-              </Text>
-            </View>
-            <View style={[summaryStyles.laborDivider, { backgroundColor: colors.border }]} />
-            <View style={[summaryStyles.laborStat, { flex: 2 }]}>
-              <Text style={[summaryStyles.laborNote, { color: colors.mutedForeground }]} numberOfLines={2}>
-                {labor.experienceNote}
-              </Text>
-            </View>
           </View>
         </View>
       )}
