@@ -30,8 +30,8 @@ paths:
     post:
       operationId: generateEstimate
       tags: [estimates]
-      summary: Generate a material cost estimate
-      description: Uses AI to generate an itemized material list with pricing from a job description
+      summary: Generate a material and labor cost estimate
+      description: Uses AI to generate an itemized material list with pricing and a labor estimate based on contractor experience
       requestBody:
         required: true
         content:
@@ -75,8 +75,56 @@ components:
         location:
           type: ["string", "null"]
           description: Optional location for regional pricing context (e.g., "Texas", "California")
+        hourlyRate:
+          type: ["number", "null"]
+          description: Contractor's hourly labor rate in USD
+        yearsExperience:
+          type: ["number", "null"]
+          description: Contractor's total years of experience (can be fractional, e.g., 0.5 for 6 months)
       required:
         - jobDescription
+    LaborTask:
+      type: object
+      properties:
+        task:
+          type: string
+          description: Name of the labor task
+        hours:
+          type: number
+          description: Estimated hours for this task
+      required:
+        - task
+        - hours
+    LaborEstimate:
+      type: object
+      properties:
+        baseHours:
+          type: number
+          description: Baseline hours for an average contractor
+        experienceMultiplier:
+          type: number
+          description: Speed multiplier based on experience (e.g., 0.8 = 20% faster)
+        adjustedHours:
+          type: number
+          description: Final estimated hours after experience adjustment
+        totalLaborCost:
+          type: number
+          description: Total labor cost in USD (adjustedHours * hourlyRate)
+        breakdown:
+          type: array
+          items:
+            $ref: "#/components/schemas/LaborTask"
+          description: Task-by-task hour breakdown
+        experienceNote:
+          type: string
+          description: Short note explaining the experience adjustment
+      required:
+        - baseHours
+        - experienceMultiplier
+        - adjustedHours
+        - totalLaborCost
+        - breakdown
+        - experienceNote
     MaterialItem:
       type: object
       properties:
@@ -132,6 +180,11 @@ components:
         grandTotal:
           type: number
           description: Total cost of all materials in USD
+        laborEstimate:
+          oneOf:
+            - $ref: "#/components/schemas/LaborEstimate"
+            - type: "null"
+          description: Labor estimate if hourly rate was provided
         disclaimer:
           type: string
           description: Pricing disclaimer

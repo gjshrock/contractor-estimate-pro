@@ -14,4 +14,14 @@ export interface EstimateRequest {
      * @nullable
      */
   location?: string | null;
+  /**
+     * Contractor's hourly labor rate in USD
+     * @nullable
+     */
+  hourlyRate?: number | null;
+  /**
+     * Contractor's total years of experience (can be fractional, e.g., 0.5 for 6 months)
+     * @nullable
+     */
+  yearsExperience?: number | null;
 }

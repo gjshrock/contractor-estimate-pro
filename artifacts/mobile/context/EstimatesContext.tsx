@@ -20,12 +20,27 @@ export interface MaterialItem {
   notes: string | null;
 }
 
+export interface LaborTask {
+  task: string;
+  hours: number;
+}
+
+export interface LaborEstimate {
+  baseHours: number;
+  experienceMultiplier: number;
+  adjustedHours: number;
+  totalLaborCost: number;
+  breakdown: LaborTask[];
+  experienceNote: string;
+}
+
 export interface Estimate {
   id: string;
   jobDescription: string;
   jobSummary: string;
   materials: MaterialItem[];
   grandTotal: number;
+  laborEstimate: LaborEstimate | null;
   disclaimer: string;
   createdAt: string;
 }
@@ -34,16 +49,13 @@ interface EstimatesContextValue {
   estimates: Estimate[];
   addEstimate: (estimate: Estimate) => Promise<void>;
   removeEstimate: (id: string) => Promise<void>;
-  removeMaterialFromEstimate: (
-    estimateId: string,
-    materialId: string
-  ) => Promise<void>;
+  removeMaterialFromEstimate: (estimateId: string, materialId: string) => Promise<void>;
   getEstimate: (id: string) => Estimate | undefined;
 }
 
 const EstimatesContext = createContext<EstimatesContextValue | null>(null);
 
-const STORAGE_KEY = "material_estimates_v1";
+const STORAGE_KEY = "material_estimates_v2";
 
 export function EstimatesProvider({ children }: { children: React.ReactNode }) {
   const [estimates, setEstimates] = useState<Estimate[]>([]);
@@ -67,8 +79,7 @@ export function EstimatesProvider({ children }: { children: React.ReactNode }) {
 
   const addEstimate = useCallback(
     async (estimate: Estimate) => {
-      const updated = [estimate, ...estimates];
-      await persist(updated);
+      await persist([estimate, ...estimates]);
     },
     [estimates, persist]
   );
@@ -85,9 +96,8 @@ export function EstimatesProvider({ children }: { children: React.ReactNode }) {
       const updated = estimates.map((e) => {
         if (e.id !== estimateId) return e;
         const materials = e.materials.filter((m) => m.id !== materialId);
-        const grandTotal = Math.round(
-          materials.reduce((sum, m) => sum + m.totalPrice, 0) * 100
-        ) / 100;
+        const grandTotal =
+          Math.round(materials.reduce((sum, m) => sum + m.totalPrice, 0) * 100) / 100;
         return { ...e, materials, grandTotal };
       });
       await persist(updated);
@@ -102,13 +112,7 @@ export function EstimatesProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <EstimatesContext.Provider
-      value={{
-        estimates,
-        addEstimate,
-        removeEstimate,
-        removeMaterialFromEstimate,
-        getEstimate,
-      }}
+      value={{ estimates, addEstimate, removeEstimate, removeMaterialFromEstimate, getEstimate }}
     >
       {children}
     </EstimatesContext.Provider>

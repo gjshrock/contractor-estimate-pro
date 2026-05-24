@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { LaborEstimate } from './laborEstimate';
 import type { MaterialItem } from './materialItem';
 
 export interface EstimateResult {
@@ -13,6 +14,8 @@ export interface EstimateResult {
   materials: MaterialItem[];
   /** Total cost of all materials in USD */
   grandTotal: number;
+  /** Labor estimate if hourly rate was provided */
+  laborEstimate?: LaborEstimate | null;
   /** Pricing disclaimer */
   disclaimer: string;
 }

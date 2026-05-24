@@ -15,6 +15,7 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { ContractorProfileProvider } from "@/context/ContractorProfileContext";
 import { EstimatesProvider } from "@/context/EstimatesContext";
 
 if (process.env.EXPO_PUBLIC_DOMAIN) {
@@ -31,6 +32,7 @@ function RootLayoutNav() {
       <Stack.Screen name="index" />
       <Stack.Screen name="new-estimate" />
       <Stack.Screen name="estimate/[id]" />
+      <Stack.Screen name="profile" />
     </Stack>
   );
 }
@@ -55,13 +57,15 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
-          <EstimatesProvider>
-            <GestureHandlerRootView style={{ flex: 1 }}>
-              <KeyboardProvider>
-                <RootLayoutNav />
-              </KeyboardProvider>
-            </GestureHandlerRootView>
-          </EstimatesProvider>
+          <ContractorProfileProvider>
+            <EstimatesProvider>
+              <GestureHandlerRootView style={{ flex: 1 }}>
+                <KeyboardProvider>
+                  <RootLayoutNav />
+                </KeyboardProvider>
+              </GestureHandlerRootView>
+            </EstimatesProvider>
+          </ContractorProfileProvider>
         </QueryClientProvider>
       </ErrorBoundary>
     </SafeAreaProvider>

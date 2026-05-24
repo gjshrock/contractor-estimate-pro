@@ -17,6 +17,38 @@ export interface EstimateRequest {
      * @nullable
      */
   location?: string | null;
+  /**
+     * Contractor's hourly labor rate in USD
+     * @nullable
+     */
+  hourlyRate?: number | null;
+  /**
+     * Contractor's total years of experience (can be fractional, e.g., 0.5 for 6 months)
+     * @nullable
+     */
+  yearsExperience?: number | null;
+}
+
+export interface LaborTask {
+  /** Name of the labor task */
+  task: string;
+  /** Estimated hours for this task */
+  hours: number;
+}
+
+export interface LaborEstimate {
+  /** Baseline hours for an average contractor */
+  baseHours: number;
+  /** Speed multiplier based on experience (e.g., 0.8 = 20% faster) */
+  experienceMultiplier: number;
+  /** Final estimated hours after experience adjustment */
+  adjustedHours: number;
+  /** Total labor cost in USD (adjustedHours * hourlyRate) */
+  totalLaborCost: number;
+  /** Task-by-task hour breakdown */
+  breakdown: LaborTask[];
+  /** Short note explaining the experience adjustment */
+  experienceNote: string;
 }
 
 export interface MaterialItem {
@@ -50,6 +82,8 @@ export interface EstimateResult {
   materials: MaterialItem[];
   /** Total cost of all materials in USD */
   grandTotal: number;
+  /** Labor estimate if hourly rate was provided */
+  laborEstimate?: LaborEstimate | null;
   /** Pricing disclaimer */
   disclaimer: string;
 }

@@ -7,7 +7,6 @@ import {
   Alert,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -15,7 +14,8 @@ import {
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useEstimates, type Estimate, type MaterialItem } from "@/context/EstimatesContext";
+import { useContractorProfile } from "@/context/ContractorProfileContext";
+import { useEstimates, type Estimate, type LaborEstimate, type MaterialItem } from "@/context/EstimatesContext";
 import { useColors } from "@/hooks/useColors";
 
 const EXAMPLE_JOBS = [
@@ -33,6 +33,7 @@ export default function NewEstimateScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { addEstimate } = useEstimates();
+  const { profile, isProfileSet, totalYearsExperience } = useContractorProfile();
 
   const [jobDescription, setJobDescription] = useState("");
   const [location, setLocation] = useState("");
@@ -55,16 +56,24 @@ export default function NewEstimateScreen() {
     setLoadingStep("Analyzing job description...");
 
     try {
-      setLoadingStep("Generating material list...");
+      setLoadingStep(isProfileSet ? "Generating material & labor estimates..." : "Generating material list...");
+
       const domain = process.env.EXPO_PUBLIC_DOMAIN;
       const base = domain ? `https://${domain}` : "";
+
+      const body: Record<string, unknown> = {
+        jobDescription: desc,
+        location: location.trim() || null,
+      };
+      if (isProfileSet) {
+        body.hourlyRate = parseFloat(profile.hourlyRate);
+        body.yearsExperience = totalYearsExperience;
+      }
+
       const response = await fetch(`${base}/api/estimates/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          jobDescription: desc,
-          location: location.trim() || null,
-        }),
+        body: JSON.stringify(body),
       });
 
       setLoadingStep("Looking up current prices...");
@@ -78,6 +87,7 @@ export default function NewEstimateScreen() {
         jobSummary: string;
         materials: MaterialItem[];
         grandTotal: number;
+        laborEstimate: LaborEstimate | null;
         disclaimer: string;
       };
 
@@ -87,6 +97,7 @@ export default function NewEstimateScreen() {
         jobSummary: data.jobSummary,
         materials: data.materials,
         grandTotal: data.grandTotal,
+        laborEstimate: data.laborEstimate ?? null,
         disclaimer: data.disclaimer,
         createdAt: new Date().toISOString(),
       };
@@ -113,17 +124,8 @@ export default function NewEstimateScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View
-        style={[
-          styles.header,
-          { paddingTop: topPad + 8, backgroundColor: colors.navyDeep },
-        ]}
-      >
-        <Pressable
-          onPress={() => router.back()}
-          style={styles.backBtn}
-          hitSlop={12}
-        >
+      <View style={[styles.header, { paddingTop: topPad + 8, backgroundColor: colors.navyDeep }]}>
+        <Pressable onPress={() => router.back()} style={styles.backBtn} hitSlop={12}>
           <Feather name="arrow-left" size={22} color="#fff" />
         </Pressable>
         <Text style={styles.headerTitle}>New Estimate</Text>
@@ -136,11 +138,52 @@ export default function NewEstimateScreen() {
         keyboardShouldPersistTaps="handled"
         bottomOffset={20}
       >
+        {/* Contractor profile strip */}
+        <Pressable
+          onPress={() => router.push("/profile")}
+          style={({ pressed }) => [
+            styles.profileStrip,
+            {
+              backgroundColor: isProfileSet ? colors.accent : colors.muted,
+              borderColor: isProfileSet ? colors.orangeLight : colors.border,
+              opacity: pressed ? 0.85 : 1,
+            },
+          ]}
+        >
+          <View style={[styles.profileIconWrap, { backgroundColor: isProfileSet ? colors.primary : colors.mutedForeground }]}>
+            <Feather name="user" size={14} color="#fff" />
+          </View>
+          <View style={{ flex: 1 }}>
+            {isProfileSet ? (
+              <>
+                <Text style={[styles.profileStripTitle, { color: colors.foreground }]}>
+                  Labor estimate included
+                </Text>
+                <Text style={[styles.profileStripSub, { color: colors.mutedForeground }]}>
+                  ${parseFloat(profile.hourlyRate).toFixed(0)}/hr · {
+                    totalYearsExperience < 1
+                      ? `${Math.round(totalYearsExperience * 12)} months exp.`
+                      : `${Math.round(totalYearsExperience * 10) / 10} yrs exp.`
+                  }
+                </Text>
+              </>
+            ) : (
+              <>
+                <Text style={[styles.profileStripTitle, { color: colors.foreground }]}>
+                  No profile set — materials only
+                </Text>
+                <Text style={[styles.profileStripSub, { color: colors.mutedForeground }]}>
+                  Tap to add your rate & experience for labor estimates
+                </Text>
+              </>
+            )}
+          </View>
+          <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
+        </Pressable>
+
         {/* Job description */}
         <View style={styles.section}>
-          <Text style={[styles.label, { color: colors.foreground }]}>
-            Describe the job
-          </Text>
+          <Text style={[styles.label, { color: colors.foreground }]}>Describe the job</Text>
           <Text style={[styles.sublabel, { color: colors.mutedForeground }]}>
             Be specific — include dimensions, materials, and scope for better accuracy
           </Text>
@@ -148,11 +191,7 @@ export default function NewEstimateScreen() {
             ref={inputRef}
             style={[
               styles.textarea,
-              {
-                backgroundColor: colors.card,
-                borderColor: colors.border,
-                color: colors.foreground,
-              },
+              { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground },
             ]}
             placeholder="e.g. Replace rotted wood siding on the north side of a 2,000 sq ft house with Hardie board cement siding…"
             placeholderTextColor={colors.mutedForeground}
@@ -165,7 +204,7 @@ export default function NewEstimateScreen() {
           />
         </View>
 
-        {/* Location (optional) */}
+        {/* Location */}
         <View style={styles.section}>
           <Text style={[styles.label, { color: colors.foreground }]}>
             Location{" "}
@@ -176,11 +215,7 @@ export default function NewEstimateScreen() {
           <TextInput
             style={[
               styles.input,
-              {
-                backgroundColor: colors.card,
-                borderColor: colors.border,
-                color: colors.foreground,
-              },
+              { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground },
             ]}
             placeholder="e.g. Texas, California, New York"
             placeholderTextColor={colors.mutedForeground}
@@ -195,9 +230,7 @@ export default function NewEstimateScreen() {
 
         {/* Example jobs */}
         <View style={styles.section}>
-          <Text style={[styles.label, { color: colors.foreground }]}>
-            Example jobs
-          </Text>
+          <Text style={[styles.label, { color: colors.foreground }]}>Example jobs</Text>
           {EXAMPLE_JOBS.map((ex) => (
             <Pressable
               key={ex}
@@ -212,9 +245,7 @@ export default function NewEstimateScreen() {
               ]}
             >
               <Feather name="chevron-right" size={14} color={colors.primary} />
-              <Text style={[styles.chipText, { color: colors.foreground }]}>
-                {ex}
-              </Text>
+              <Text style={[styles.chipText, { color: colors.foreground }]}>{ex}</Text>
             </Pressable>
           ))}
         </View>
@@ -226,30 +257,31 @@ export default function NewEstimateScreen() {
           style={({ pressed }) => [
             styles.generateBtn,
             {
-              backgroundColor:
-                jobDescription.trim().length < 10
-                  ? colors.muted
-                  : colors.primary,
+              backgroundColor: jobDescription.trim().length < 10 ? colors.muted : colors.primary,
               opacity: pressed ? 0.9 : 1,
             },
           ]}
         >
           {loading ? (
-            <View style={styles.loadingRow}>
+            <View style={styles.btnRow}>
               <ActivityIndicator color="#fff" size="small" />
               <Text style={styles.generateBtnText}>{loadingStep}</Text>
             </View>
           ) : (
-            <View style={styles.loadingRow}>
+            <View style={styles.btnRow}>
               <Feather name="zap" size={18} color="#fff" />
-              <Text style={styles.generateBtnText}>Generate Estimate</Text>
+              <Text style={styles.generateBtnText}>
+                {isProfileSet ? "Generate Material & Labor Estimate" : "Generate Estimate"}
+              </Text>
             </View>
           )}
         </Pressable>
 
         {!loading && (
           <Text style={[styles.footerNote, { color: colors.mutedForeground }]}>
-            AI-powered estimate using current Home Depot & Lowe's pricing
+            {isProfileSet
+              ? "AI-powered estimate with personalized labor costs"
+              : "AI-powered estimate using current Home Depot & Lowe's pricing"}
           </Text>
         )}
       </KeyboardAwareScrollView>
@@ -273,20 +305,37 @@ const styles = StyleSheet.create({
     color: "#ffffff",
   },
   content: {
-    paddingTop: 24,
+    paddingTop: 20,
     paddingHorizontal: 16,
-    gap: 24,
+    gap: 22,
   },
-  section: { gap: 8 },
-  label: {
-    fontSize: 15,
+  profileStrip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12,
+  },
+  profileIconWrap: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  profileStripTitle: {
+    fontSize: 13,
     fontFamily: "Inter_600SemiBold",
   },
-  sublabel: {
-    fontSize: 13,
+  profileStripSub: {
+    fontSize: 12,
     fontFamily: "Inter_400Regular",
-    lineHeight: 18,
+    marginTop: 1,
   },
+  section: { gap: 8 },
+  label: { fontSize: 15, fontFamily: "Inter_600SemiBold" },
+  sublabel: { fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 18 },
   textarea: {
     borderWidth: 1,
     borderRadius: 12,
@@ -304,10 +353,7 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     height: 48,
   },
-  hint: {
-    fontSize: 12,
-    fontFamily: "Inter_400Regular",
-  },
+  hint: { fontSize: 12, fontFamily: "Inter_400Regular" },
   chip: {
     flexDirection: "row",
     alignItems: "flex-start",
@@ -316,12 +362,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 12,
   },
-  chipText: {
-    flex: 1,
-    fontSize: 13,
-    fontFamily: "Inter_400Regular",
-    lineHeight: 18,
-  },
+  chipText: { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 18 },
   generateBtn: {
     borderRadius: 14,
     paddingVertical: 16,
@@ -329,16 +370,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginTop: 8,
   },
-  loadingRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  generateBtnText: {
-    color: "#ffffff",
-    fontSize: 16,
-    fontFamily: "Inter_700Bold",
-  },
+  btnRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  generateBtnText: { color: "#ffffff", fontSize: 16, fontFamily: "Inter_700Bold" },
   footerNote: {
     fontSize: 12,
     fontFamily: "Inter_400Regular",

@@ -10,4 +10,6 @@ export * from './errorResponse';
 export * from './estimateRequest';
 export * from './estimateResult';
 export * from './healthStatus';
+export * from './laborEstimate';
+export * from './laborTask';
 export * from './materialItem';

@@ -125,8 +125,8 @@ export const getGenerateEstimateUrl = () => {
 }
 
 /**
- * Uses AI to generate an itemized material list with pricing from a job description
- * @summary Generate a material cost estimate
+ * Uses AI to generate an itemized material list with pricing and a labor estimate based on contractor experience
+ * @summary Generate a material and labor cost estimate
  */
 export const generateEstimate = async (estimateRequest: EstimateRequest, options?: RequestInit): Promise<EstimateResult> => {
 
@@ -175,7 +175,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type GenerateEstimateMutationError = ErrorType<ErrorResponse>
 
     /**
- * @summary Generate a material cost estimate
+ * @summary Generate a material and labor cost estimate
  */
 export const useGenerateEstimate = <TError = ErrorType<ErrorResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateEstimate>>, TError,{data: BodyType<EstimateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}

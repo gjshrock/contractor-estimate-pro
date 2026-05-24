@@ -18,12 +18,14 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
- * Uses AI to generate an itemized material list with pricing from a job description
- * @summary Generate a material cost estimate
+ * Uses AI to generate an itemized material list with pricing and a labor estimate based on contractor experience
+ * @summary Generate a material and labor cost estimate
  */
 export const GenerateEstimateBody = zod.object({
   "jobDescription": zod.string().describe('Description of the construction or renovation job'),
-  "location": zod.string().nullish().describe('Optional location for regional pricing context (e.g., \"Texas\", \"California\")')
+  "location": zod.string().nullish().describe('Optional location for regional pricing context (e.g., \"Texas\", \"California\")'),
+  "hourlyRate": zod.number().nullish().describe('Contractor\'s hourly labor rate in USD'),
+  "yearsExperience": zod.number().nullish().describe('Contractor\'s total years of experience (can be fractional, e.g., 0.5 for 6 months)')
 })
 
 export const GenerateEstimateResponse = zod.object({
@@ -41,6 +43,17 @@ export const GenerateEstimateResponse = zod.object({
   "notes": zod.string().nullish().describe('Any additional notes about this material')
 })),
   "grandTotal": zod.number().describe('Total cost of all materials in USD'),
+  "laborEstimate": zod.union([zod.object({
+  "baseHours": zod.number().describe('Baseline hours for an average contractor'),
+  "experienceMultiplier": zod.number().describe('Speed multiplier based on experience (e.g., 0.8 = 20% faster)'),
+  "adjustedHours": zod.number().describe('Final estimated hours after experience adjustment'),
+  "totalLaborCost": zod.number().describe('Total labor cost in USD (adjustedHours \* hourlyRate)'),
+  "breakdown": zod.array(zod.object({
+  "task": zod.string().describe('Name of the labor task'),
+  "hours": zod.number().describe('Estimated hours for this task')
+})).describe('Task-by-task hour breakdown'),
+  "experienceNote": zod.string().describe('Short note explaining the experience adjustment')
+}),zod.null()]).optional().describe('Labor estimate if hourly rate was provided'),
   "disclaimer": zod.string().describe('Pricing disclaimer')
 })
 
