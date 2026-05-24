@@ -9,6 +9,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -17,20 +18,24 @@ import { useColors } from "@/hooks/useColors";
 
 // ─── Summary view (screenshot-friendly) ─────────────────────────────────────
 
+const MARKUP_PRESETS = [0, 10, 15, 20, 25, 30];
+
 function SummaryView({
   materials,
   labor,
   grandTotal,
-  onRemove,
+  markup,
+  onMarkupChange,
 }: {
   materials: MaterialItem[];
   labor: LaborEstimate | null;
   grandTotal: number;
-  onRemove: (id: string) => void;
+  markup: number;
+  onMarkupChange: (v: number) => void;
 }) {
   const colors = useColors();
+  const [inputVal, setInputVal] = useState(markup > 0 ? String(markup) : "");
 
-  // Group by category with subtotals
   const grouped = materials.reduce<Record<string, { items: MaterialItem[]; subtotal: number }>>(
     (acc, item) => {
       if (!acc[item.category]) acc[item.category] = { items: [], subtotal: 0 };
@@ -41,11 +46,25 @@ function SummaryView({
     {}
   );
 
-  const combinedTotal = grandTotal + (labor?.totalLaborCost ?? 0);
-  const speedPct = labor
-    ? Math.round(Math.abs(1 - labor.experienceMultiplier) * 100)
-    : 0;
-  const isFaster = labor ? labor.experienceMultiplier < 1 : false;
+  const subtotal = grandTotal + (labor?.totalLaborCost ?? 0);
+  const markupAmount = Math.round(subtotal * (markup / 100) * 100) / 100;
+  const finalTotal = Math.round((subtotal + markupAmount) * 100) / 100;
+
+  const handleInputChange = (text: string) => {
+    setInputVal(text);
+    const num = parseFloat(text);
+    if (!isNaN(num) && num >= 0 && num <= 200) {
+      onMarkupChange(Math.round(num * 10) / 10);
+    } else if (text === "" || text === "0") {
+      onMarkupChange(0);
+    }
+  };
+
+  const handlePreset = (pct: number) => {
+    if (Platform.OS !== "web") Haptics.selectionAsync();
+    setInputVal(pct > 0 ? String(pct) : "");
+    onMarkupChange(pct);
+  };
 
   return (
     <View style={summaryStyles.root}>
@@ -57,7 +76,7 @@ function SummaryView({
             ${grandTotal.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </Text>
         </View>
-        {Object.entries(grouped).map(([category, { items, subtotal }], idx, arr) => (
+        {Object.entries(grouped).map(([category, { items, subtotal: catTotal }], idx, arr) => (
           <View
             key={category}
             style={[
@@ -72,13 +91,13 @@ function SummaryView({
               </Text>
             </View>
             <Text style={[summaryStyles.catTotal, { color: colors.foreground }]}>
-              ${subtotal.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              ${catTotal.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </Text>
           </View>
         ))}
       </View>
 
-      {/* Labor — customer-facing only shows the cost, no rate/hours/experience */}
+      {/* Labor — customer-facing, no rate/hours/experience */}
       {labor && (
         <View style={[summaryStyles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={summaryStyles.catRow}>
@@ -90,13 +109,74 @@ function SummaryView({
         </View>
       )}
 
-      {/* Grand total */}
+      {/* Markup control — not shown in screenshot if 0%, shows as a line item if > 0 */}
+      <View style={[summaryStyles.markupCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={[summaryStyles.markupHeader, { borderBottomColor: colors.border }]}>
+          <Feather name="percent" size={13} color={colors.primary} />
+          <Text style={[summaryStyles.markupTitle, { color: colors.foreground }]}>Markup / Margin</Text>
+          <View style={[summaryStyles.markupInputWrap, { borderColor: colors.border, backgroundColor: colors.muted }]}>
+            <TextInput
+              style={[summaryStyles.markupInput, { color: colors.foreground }]}
+              value={inputVal}
+              onChangeText={handleInputChange}
+              placeholder="0"
+              placeholderTextColor={colors.mutedForeground}
+              keyboardType="decimal-pad"
+              returnKeyType="done"
+              maxLength={5}
+            />
+            <Text style={[summaryStyles.markupPct, { color: colors.mutedForeground }]}>%</Text>
+          </View>
+        </View>
+        <View style={summaryStyles.presetRow}>
+          {MARKUP_PRESETS.map((pct) => (
+            <Pressable
+              key={pct}
+              onPress={() => handlePreset(pct)}
+              style={[
+                summaryStyles.presetBtn,
+                {
+                  backgroundColor: markup === pct ? colors.primary : colors.muted,
+                  borderColor: markup === pct ? colors.primary : colors.border,
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  summaryStyles.presetText,
+                  { color: markup === pct ? "#fff" : colors.mutedForeground },
+                ]}
+              >
+                {pct === 0 ? "None" : `${pct}%`}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      </View>
+
+      {/* Markup line item — only shown when markup > 0 */}
+      {markup > 0 && (
+        <View style={[summaryStyles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={summaryStyles.catRow}>
+            <View style={summaryStyles.catLeft}>
+              <Text style={[summaryStyles.catName, { color: colors.foreground }]}>
+                Markup ({markup}%)
+              </Text>
+            </View>
+            <Text style={[summaryStyles.catTotal, { color: colors.foreground }]}>
+              +${markupAmount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </Text>
+          </View>
+        </View>
+      )}
+
+      {/* Final total */}
       <View style={[summaryStyles.totalRow, { backgroundColor: colors.primary }]}>
         <Text style={summaryStyles.totalLabel}>
-          {labor ? "Total Quote (Materials + Labor)" : "Materials Total"}
+          Total Quote
         </Text>
         <Text style={summaryStyles.totalAmount}>
-          ${combinedTotal.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          ${finalTotal.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </Text>
       </View>
     </View>
@@ -233,12 +313,18 @@ export default function EstimateDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { getEstimate, removeMaterialFromEstimate } = useEstimates();
+  const { getEstimate, removeMaterialFromEstimate, updateMarkup } = useEstimates();
 
   const estimateData = getEstimate(id ?? "");
   const [materials, setMaterials] = useState(estimateData?.materials ?? []);
   const [grandTotal, setGrandTotal] = useState(estimateData?.grandTotal ?? 0);
+  const [markup, setMarkup] = useState(estimateData?.markup ?? 0);
   const [view, setView] = useState<"summary" | "detail">("summary");
+
+  const handleMarkupChange = (v: number) => {
+    setMarkup(v);
+    if (id) updateMarkup(id, v);
+  };
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
@@ -340,7 +426,8 @@ export default function EstimateDetailScreen() {
             materials={materials}
             labor={labor}
             grandTotal={grandTotal}
-            onRemove={handleRemoveMaterial}
+            markup={markup}
+            onMarkupChange={handleMarkupChange}
           />
         ) : (
           <DetailView
@@ -410,36 +497,59 @@ const summaryStyles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Inter_700Bold",
   },
-  laborRow: {
+  markupCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    overflow: "hidden",
+  },
+  markupHeader: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 12,
+    gap: 6,
     paddingHorizontal: 14,
-    gap: 0,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
   },
-  laborStat: {
+  markupTitle: {
     flex: 1,
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+  },
+  markupInputWrap: {
+    flexDirection: "row",
     alignItems: "center",
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     gap: 2,
   },
-  laborStatVal: {
-    fontSize: 16,
+  markupInput: {
+    fontSize: 15,
     fontFamily: "Inter_700Bold",
+    minWidth: 32,
+    textAlign: "right",
+    padding: 0,
   },
-  laborStatLabel: {
-    fontSize: 11,
-    fontFamily: "Inter_400Regular",
+  markupPct: {
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
   },
-  laborDivider: {
-    width: 1,
-    height: 32,
-    marginHorizontal: 8,
+  presetRow: {
+    flexDirection: "row",
+    gap: 6,
+    padding: 10,
   },
-  laborNote: {
-    fontSize: 11,
-    fontFamily: "Inter_400Regular",
-    lineHeight: 15,
-    textAlign: "center",
+  presetBtn: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  presetText: {
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
   },
   totalRow: {
     borderRadius: 14,

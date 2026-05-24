@@ -41,6 +41,7 @@ export interface Estimate {
   materials: MaterialItem[];
   grandTotal: number;
   laborEstimate: LaborEstimate | null;
+  markup: number;
   disclaimer: string;
   createdAt: string;
 }
@@ -50,6 +51,7 @@ interface EstimatesContextValue {
   addEstimate: (estimate: Estimate) => Promise<void>;
   removeEstimate: (id: string) => Promise<void>;
   removeMaterialFromEstimate: (estimateId: string, materialId: string) => Promise<void>;
+  updateMarkup: (estimateId: string, markup: number) => Promise<void>;
   getEstimate: (id: string) => Estimate | undefined;
 }
 
@@ -105,6 +107,13 @@ export function EstimatesProvider({ children }: { children: React.ReactNode }) {
     [estimates, persist]
   );
 
+  const updateMarkup = useCallback(
+    async (estimateId: string, markup: number) => {
+      await persist(estimates.map((e) => e.id === estimateId ? { ...e, markup } : e));
+    },
+    [estimates, persist]
+  );
+
   const getEstimate = useCallback(
     (id: string) => estimates.find((e) => e.id === id),
     [estimates]
@@ -112,7 +121,7 @@ export function EstimatesProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <EstimatesContext.Provider
-      value={{ estimates, addEstimate, removeEstimate, removeMaterialFromEstimate, getEstimate }}
+      value={{ estimates, addEstimate, removeEstimate, removeMaterialFromEstimate, updateMarkup, getEstimate }}
     >
       {children}
     </EstimatesContext.Provider>

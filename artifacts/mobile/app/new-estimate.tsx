@@ -98,6 +98,7 @@ export default function NewEstimateScreen() {
         materials: data.materials,
         grandTotal: data.grandTotal,
         laborEstimate: data.laborEstimate ?? null,
+        markup: 0,
         disclaimer: data.disclaimer,
         createdAt: new Date().toISOString(),
       };
