@@ -25,7 +25,6 @@ function SummaryView({
   labor,
   grandTotal,
   markup,
-  onMarkupChange,
   notes,
   onNotesChange,
 }: {
@@ -33,12 +32,10 @@ function SummaryView({
   labor: LaborEstimate | null;
   grandTotal: number;
   markup: number;
-  onMarkupChange: (v: number) => void;
   notes: string;
   onNotesChange: (v: string) => void;
 }) {
   const colors = useColors();
-  const [inputVal, setInputVal] = useState(markup > 0 ? String(markup) : "");
 
   const grouped = materials.reduce<Record<string, { items: MaterialItem[]; subtotal: number }>>(
     (acc, item) => {
@@ -53,22 +50,6 @@ function SummaryView({
   const subtotal = grandTotal + (labor?.totalLaborCost ?? 0);
   const markupAmount = Math.round(subtotal * (markup / 100) * 100) / 100;
   const finalTotal = Math.round((subtotal + markupAmount) * 100) / 100;
-
-  const handleInputChange = (text: string) => {
-    setInputVal(text);
-    const num = parseFloat(text);
-    if (!isNaN(num) && num >= 0 && num <= 200) {
-      onMarkupChange(Math.round(num * 10) / 10);
-    } else if (text === "" || text === "0") {
-      onMarkupChange(0);
-    }
-  };
-
-  const handlePreset = (pct: number) => {
-    if (Platform.OS !== "web") Haptics.selectionAsync();
-    setInputVal(pct > 0 ? String(pct) : "");
-    onMarkupChange(pct);
-  };
 
   return (
     <View style={summaryStyles.root}>
@@ -113,52 +94,7 @@ function SummaryView({
         </View>
       )}
 
-      {/* Markup control — not shown in screenshot if 0%, shows as a line item if > 0 */}
-      <View style={[summaryStyles.markupCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <View style={[summaryStyles.markupHeader, { borderBottomColor: colors.border }]}>
-          <Feather name="percent" size={13} color={colors.primary} />
-          <Text style={[summaryStyles.markupTitle, { color: colors.foreground }]}>Markup / Margin</Text>
-          <View style={[summaryStyles.markupInputWrap, { borderColor: colors.border, backgroundColor: colors.muted }]}>
-            <TextInput
-              style={[summaryStyles.markupInput, { color: colors.foreground }]}
-              value={inputVal}
-              onChangeText={handleInputChange}
-              placeholder="0"
-              placeholderTextColor={colors.mutedForeground}
-              keyboardType="decimal-pad"
-              returnKeyType="done"
-              maxLength={5}
-            />
-            <Text style={[summaryStyles.markupPct, { color: colors.mutedForeground }]}>%</Text>
-          </View>
-        </View>
-        <View style={summaryStyles.presetRow}>
-          {MARKUP_PRESETS.map((pct) => (
-            <Pressable
-              key={pct}
-              onPress={() => handlePreset(pct)}
-              style={[
-                summaryStyles.presetBtn,
-                {
-                  backgroundColor: markup === pct ? colors.primary : colors.muted,
-                  borderColor: markup === pct ? colors.primary : colors.border,
-                },
-              ]}
-            >
-              <Text
-                style={[
-                  summaryStyles.presetText,
-                  { color: markup === pct ? "#fff" : colors.mutedForeground },
-                ]}
-              >
-                {pct === 0 ? "None" : `${pct}%`}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-      </View>
-
-      {/* Markup line item — only shown when markup > 0 */}
+      {/* Markup line item — read-only, only shown when markup > 0 */}
       {markup > 0 && (
         <View style={[summaryStyles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={summaryStyles.catRow}>
@@ -211,20 +147,44 @@ function DetailView({
   labor,
   grandTotal,
   onRemove,
+  markup,
+  onMarkupChange,
 }: {
   materials: MaterialItem[];
   labor: LaborEstimate | null;
   grandTotal: number;
   onRemove: (id: string) => void;
+  markup: number;
+  onMarkupChange: (v: number) => void;
 }) {
   const colors = useColors();
+  const [inputVal, setInputVal] = useState(markup > 0 ? String(markup) : "");
+
   const grouped = materials.reduce<Record<string, MaterialItem[]>>((acc, item) => {
     if (!acc[item.category]) acc[item.category] = [];
     acc[item.category].push(item);
     return acc;
   }, {});
 
-  const combinedTotal = grandTotal + (labor?.totalLaborCost ?? 0);
+  const subtotal = grandTotal + (labor?.totalLaborCost ?? 0);
+  const markupAmount = Math.round(subtotal * (markup / 100) * 100) / 100;
+  const combinedTotal = Math.round((subtotal + markupAmount) * 100) / 100;
+
+  const handleInputChange = (text: string) => {
+    setInputVal(text);
+    const num = parseFloat(text);
+    if (!isNaN(num) && num >= 0 && num <= 200) {
+      onMarkupChange(Math.round(num * 10) / 10);
+    } else if (text === "" || text === "0") {
+      onMarkupChange(0);
+    }
+  };
+
+  const handlePreset = (pct: number) => {
+    if (Platform.OS !== "web") Haptics.selectionAsync();
+    setInputVal(pct > 0 ? String(pct) : "");
+    onMarkupChange(pct);
+  };
 
   return (
     <View style={{ gap: 12 }}>
@@ -314,6 +274,58 @@ function DetailView({
           ))}
         </View>
       ))}
+
+      {/* Markup control */}
+      <View style={[summaryStyles.markupCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={[summaryStyles.markupHeader, { borderBottomColor: colors.border }]}>
+          <Feather name="percent" size={13} color={colors.primary} />
+          <Text style={[summaryStyles.markupTitle, { color: colors.foreground }]}>Markup / Margin</Text>
+          <View style={[summaryStyles.markupInputWrap, { borderColor: colors.border, backgroundColor: colors.muted }]}>
+            <TextInput
+              style={[summaryStyles.markupInput, { color: colors.foreground }]}
+              value={inputVal}
+              onChangeText={handleInputChange}
+              placeholder="0"
+              placeholderTextColor={colors.mutedForeground}
+              keyboardType="decimal-pad"
+              returnKeyType="done"
+              maxLength={5}
+            />
+            <Text style={[summaryStyles.markupPct, { color: colors.mutedForeground }]}>%</Text>
+          </View>
+        </View>
+        <View style={summaryStyles.presetRow}>
+          {MARKUP_PRESETS.map((pct) => (
+            <Pressable
+              key={pct}
+              onPress={() => handlePreset(pct)}
+              style={[
+                summaryStyles.presetBtn,
+                {
+                  backgroundColor: markup === pct ? colors.primary : colors.muted,
+                  borderColor: markup === pct ? colors.primary : colors.border,
+                },
+              ]}
+            >
+              <Text style={[summaryStyles.presetText, { color: markup === pct ? "#fff" : colors.mutedForeground }]}>
+                {pct === 0 ? "None" : `${pct}%`}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      </View>
+
+      {/* Markup line item */}
+      {markup > 0 && (
+        <View style={[detailStyles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={[detailStyles.catHeader, { borderBottomColor: "transparent" }]}>
+            <Text style={[detailStyles.catTitle, { color: colors.foreground }]}>Markup ({markup}%)</Text>
+            <Text style={[detailStyles.catTotal, { color: colors.foreground }]}>
+              +${markupAmount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </Text>
+          </View>
+        </View>
+      )}
 
       {/* Combined total */}
       <View style={[detailStyles.totalRow, { backgroundColor: colors.primary }]}>
@@ -454,7 +466,6 @@ export default function EstimateDetailScreen() {
             labor={labor}
             grandTotal={grandTotal}
             markup={markup}
-            onMarkupChange={handleMarkupChange}
             notes={notes}
             onNotesChange={handleNotesChange}
           />
@@ -464,6 +475,8 @@ export default function EstimateDetailScreen() {
             labor={labor}
             grandTotal={grandTotal}
             onRemove={handleRemoveMaterial}
+            markup={markup}
+            onMarkupChange={handleMarkupChange}
           />
         )}
 
