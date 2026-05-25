@@ -6,9 +6,20 @@ const apiUrl = isProduction ? PRODUCTION_URL : devDomain ? `https://${devDomain}
 
 module.exports = {
   expo: {
-    name: "Material Estimator",
-    slug: "mobile",
-    version: "1.0.0",
+  name: "Material Estimator",
+  slug: "mobile",
+
+  ios: {
+    supportsTablet: false,
+    bundleIdentifier: "com.materialestimator.app",
+    buildNumber: "1"
+  },
+
+  android: {
+    package: "com.materialestimator.app"
+  },
+
+  version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/images/icon.png",
     scheme: "mobile",

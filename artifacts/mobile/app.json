@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "Material Estimator",
+    "slug": "mobile",
+
+    "ios": {
+      "bundleIdentifier": "com.materialestimator.app",
+      "supportsTablet": false,
+      "buildNumber": "1"
+    },
+
+    "android": {
+      "package": "com.materialestimator.app"
+    },
+
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "mobile",
+    "userInterfaceStyle": "automatic"
+  }
+}
