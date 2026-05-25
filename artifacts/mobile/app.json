@@ -1,16 +1,16 @@
 {
   "expo": {
-    "name": "Material Estimator",
-    "slug": "mobile",
+    "name": "Phase 1",
+    "slug": "phase-one",
 
     "ios": {
-      "bundleIdentifier": "com.materialestimator.app",
+      "bundleIdentifier": "com.gjshrock.phaseone",
       "supportsTablet": false,
       "buildNumber": "1"
     },
 
     "android": {
-      "package": "com.materialestimator.app"
+      "package": "com.gjshrock.phaseone"
     },
 
     "version": "1.0.0",

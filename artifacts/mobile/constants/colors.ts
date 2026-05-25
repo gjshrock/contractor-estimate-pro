@@ -1,41 +1,41 @@
 const colors = {
   light: {
-    text: "#0f172a",
-    tint: "#f97316",
+    text: "#E6E8EB",
+    tint: "#FF6A00",
 
-    background: "#f8fafc",
-    foreground: "#0f172a",
+    background: "#0F1115",
+    foreground: "#E6E8EB",
 
-    card: "#ffffff",
-    cardForeground: "#0f172a",
+    card: "#1A1D24",
+    cardForeground: "#E6E8EB",
 
-    primary: "#f97316",
-    primaryForeground: "#ffffff",
+    primary: "#FF6A00",
+    primaryForeground: "#FFFFFF",
 
-    secondary: "#1e3a5f",
-    secondaryForeground: "#ffffff",
+    secondary: "#232833",
+    secondaryForeground: "#E6E8EB",
 
-    muted: "#f1f5f9",
-    mutedForeground: "#64748b",
+    muted: "#1A1D24",
+    mutedForeground: "#9AA3AF",
 
-    accent: "#fff7ed",
-    accentForeground: "#f97316",
+    accent: "#2A2F3A",
+    accentForeground: "#FF6A00",
 
-    destructive: "#ef4444",
-    destructiveForeground: "#ffffff",
+    destructive: "#EF4444",
+    destructiveForeground: "#FFFFFF",
 
-    success: "#22c55e",
-    successForeground: "#ffffff",
+    success: "#22C55E",
+    successForeground: "#FFFFFF",
 
-    border: "#e2e8f0",
-    input: "#e2e8f0",
+    border: "#2A2F3A",
+    input: "#2A2F3A",
 
     // App-specific
-    navyDeep: "#0f2044",
-    navyMid: "#1e3a5f",
-    orangeLight: "#fed7aa",
-    surface: "#ffffff",
-    subtleText: "#94a3b8",
+    navyDeep: "#0F1115",
+    navyMid: "#1A1D24",
+    orangeLight: "#FF6A00",
+    surface: "#1A1D24",
+    subtleText: "#9AA3AF",
   },
 
   radius: 12,
