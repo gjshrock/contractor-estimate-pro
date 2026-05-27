@@ -3,6 +3,15 @@ import { openai } from "@workspace/integrations-openai-ai-server";
 
 const router = Router();
 
+function cleanJson(text: string): string {
+  return text
+    .replace(/```json/g, "")
+    .replace(/```/g, "")
+    .replace(/\/\/.*$/gm, "")
+    .replace(/,\s*([}\]])/g, "$1")
+    .trim();
+}
+
 router.post("/estimates/generate", async (req, res) => {
   const { jobDescription, location, hourlyRate, yearsExperience } = req.body as {
     jobDescription?: string;
@@ -22,36 +31,55 @@ router.post("/estimates/generate", async (req, res) => {
   const locationContext = location ? ` The project is located in ${location}.` : "";
 
   const hasLabor = typeof hourlyRate === "number" && hourlyRate > 0;
+
   const laborContext = hasLabor
-    ? `\n\nCONTRACTOR PROFILE:
+    ? `
+
+CONTRACTOR PROFILE:
 - Hourly rate: $${hourlyRate}/hr
 - Years of experience: ${yearsExperience ?? 0} year${(yearsExperience ?? 0) === 1 ? "" : "s"}
 
 You MUST include a "laborEstimate" section in your response using this contractor's profile.
 
 EXPERIENCE SPEED MULTIPLIER GUIDE:
-- 0–1 years: 1.40 (40% slower than average — still learning)
-- 1–3 years: 1.20 (20% slower — building speed)
-- 3–7 years: 1.00 (industry average)
-- 7–15 years: 0.85 (15% faster — seasoned pro)
-- 15+ years: 0.75 (25% faster — expert efficiency)
+- 0–1 years: 1.40
+- 1–3 years: 1.20
+- 3–7 years: 1.00
+- 7–15 years: 0.85
+- 15+ years: 0.75
 
-Calculate baseHours for an average 5-year contractor, then apply the appropriate multiplier for ${yearsExperience ?? 0} years experience to get adjustedHours. Total labor cost = adjustedHours × $${hourlyRate}.`
-    : "\n\nNo contractor profile provided — set laborEstimate to null in your response.";
+Calculate baseHours for an average 5-year contractor, then apply the appropriate multiplier for ${
+        yearsExperience ?? 0
+      } years.`
+    : `
 
-  const systemPrompt = `You are an expert construction estimator with 20+ years of experience across residential and commercial projects. You have deep knowledge of current material prices at Home Depot and Lowe's, and realistic labor time estimates for all types of construction work.
+No contractor profile provided — set laborEstimate to null in your response.`;
+
+  const systemPrompt = `You are an expert construction estimator with 20+ years of experience across residential and commercial projects.
 
 Your job is to analyze a contractor's job description and produce:
 1. A detailed, realistic itemized materials list with accurate current pricing
-2. A labor estimate (if contractor profile is provided)
+2. A labor estimate if a contractor profile is provided
 
-PRICING GUIDELINES (as of 2025):
+PRICING GUIDELINES:
 - Reference typical Home Depot and Lowe's retail prices
 - Use realistic quantities based on the job scope
-- Include all necessary materials (don't skip fasteners, adhesives, primer, etc.)
-- Factor in ~10% waste for most materials
+- Include all necessary materials such as fasteners, adhesives, primer, sealants, blades, tape, screws, disposal bags, and other required supplies
+- Do not include tool purchases unless the tool is clearly consumable, rented, or specifically needed as a project cost
 
-Respond ONLY with a valid JSON object in this exact format:
+CRITICAL JSON RULES:
+- Return ONLY valid raw JSON
+- Do NOT include markdown
+- Do NOT include explanations outside the JSON
+- Do NOT include comments
+- Do NOT use // comments
+- Do NOT use /* */ comments
+- Do NOT use trailing commas
+- Use double quotes for every string and property name
+- Use null for empty values
+- Every numeric field must be a number, not a string
+
+Return this exact JSON shape:
 {
   "jobSummary": "Brief 1-2 sentence summary of the job",
   "materials": [
@@ -59,30 +87,30 @@ Respond ONLY with a valid JSON object in this exact format:
       "id": "mat-1",
       "name": "Material name",
       "description": "Specific spec or product description",
-      "category": "Category (e.g. Lumber, Drywall, Hardware, Paint, Concrete, Flooring, Roofing, Plumbing, Electrical, Fasteners)",
+      "category": "Category",
       "quantity": 10,
       "unit": "pieces",
       "unitPrice": 4.97,
-      "totalPrice": 49.70,
+      "totalPrice": 49.7,
       "storeName": "Home Depot",
       "notes": null
     }
   ],
   "grandTotal": 1234.56,
   "laborEstimate": null,
-  "disclaimer": "Prices are estimates based on current Home Depot and Lowe's retail pricing and may vary by region and availability. Labor estimates are based on industry averages and may vary. Always verify before submitting a final bid."
+  "disclaimer": "Prices are estimates based on typical Home Depot and Lowe's retail pricing and may vary by region and availability. Labor estimates are based on industry averages and may vary. Always verify before submitting a final bid."
 }
 
 If a contractor profile IS provided, replace laborEstimate null with:
 {
-  "baseHours": 16.0,
+  "baseHours": 16,
   "experienceMultiplier": 0.85,
   "adjustedHours": 13.6,
-  "totalLaborCost": 1224.00,
+  "totalLaborCost": 1224,
   "breakdown": [
-    { "task": "Demo and site prep", "hours": 2.0 },
-    { "task": "Framing", "hours": 4.0 },
-    { "task": "Install materials", "hours": 6.0 },
+    { "task": "Demo and site prep", "hours": 2 },
+    { "task": "Framing", "hours": 4 },
+    { "task": "Install materials", "hours": 6 },
     { "task": "Finishing and cleanup", "hours": 1.6 }
   ],
   "experienceNote": "At X years experience, you work Y% faster than average."
@@ -91,9 +119,10 @@ If a contractor profile IS provided, replace laborEstimate null with:
 Rules:
 - Include 8-20 material line items depending on job complexity
 - grandTotal must equal the sum of all material totalPrice values
-- notes field: use null if no special notes, or a short string for important callouts
-- id must be unique (use simple strings like "mat-1", "mat-2", etc.)
-- Labor breakdown: 4-7 tasks covering the full job scope${laborContext}`;
+- notes field must be null if no special notes, or a short string for important callouts
+- id must be unique using strings like "mat-1", "mat-2", "mat-3"
+- Labor breakdown must include 4-7 tasks covering the full job scope
+- Make sure the final answer can be parsed by JSON.parse with no cleanup required${laborContext}`;
 
   const userPrompt = `Generate a detailed estimate for this job: ${jobDescription.trim()}${locationContext}`;
 
@@ -109,12 +138,13 @@ Rules:
     });
 
     const content = completion.choices[0]?.message?.content;
+
     if (!content) {
       res.status(500).json({ error: "AI_ERROR", message: "No response from AI model." });
       return;
     }
 
-    const parsed = JSON.parse(content) as {
+    const parsed = JSON.parse(cleanJson(content)) as {
       jobSummary: string;
       materials: Array<{
         id: string;
@@ -140,11 +170,13 @@ Rules:
       disclaimer: string;
     };
 
-    // Recalculate materials grandTotal for accuracy
-    const recalcTotal = parsed.materials.reduce((sum, m) => sum + m.totalPrice, 0);
+    const recalcTotal = parsed.materials.reduce((sum, material) => {
+      material.totalPrice = Math.round(material.quantity * material.unitPrice * 100) / 100;
+      return sum + material.totalPrice;
+    }, 0);
+
     parsed.grandTotal = Math.round(recalcTotal * 100) / 100;
 
-    // Recalculate labor total if present
     if (parsed.laborEstimate && hasLabor) {
       parsed.laborEstimate.totalLaborCost =
         Math.round(parsed.laborEstimate.adjustedHours * hourlyRate! * 100) / 100;
