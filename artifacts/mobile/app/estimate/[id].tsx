@@ -47,9 +47,10 @@ function SummaryView({
     {}
   );
 
-  const subtotal = grandTotal + (labor?.totalLaborCost ?? 0);
-  const markupAmount = Math.round(subtotal * (markup / 100) * 100) / 100;
-  const finalTotal = Math.round((subtotal + markupAmount) * 100) / 100;
+  const materialsTotal = grandTotal;
+  const laborTotal = labor?.totalLaborCost ?? 0;
+  const markupAmount = Math.round(materialsTotal * (markup / 100) * 100) / 100;
+  const finalTotal = Math.round((materialsTotal + markupAmount + laborTotal) * 100) / 100;
 
   return (
     <View style={summaryStyles.root}>
@@ -58,7 +59,7 @@ function SummaryView({
         <View style={[summaryStyles.cardHeader, { borderBottomColor: colors.border }]}>
           <Text style={[summaryStyles.cardTitle, { color: colors.foreground }]}>Materials</Text>
           <Text style={[summaryStyles.cardHeaderTotal, { color: colors.mutedForeground }]}>
-            ${grandTotal.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            ${materialsTotal.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </Text>
         </View>
         {Object.entries(grouped).map(([category, { items, subtotal: catTotal }], idx, arr) => (
@@ -88,7 +89,7 @@ function SummaryView({
           <View style={summaryStyles.catRow}>
             <Text style={[summaryStyles.catName, { color: colors.foreground }]}>Labor</Text>
             <Text style={[summaryStyles.catTotal, { color: colors.foreground }]}>
-              ${labor.totalLaborCost.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              ${laborTotal.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </Text>
           </View>
         </View>
@@ -100,7 +101,7 @@ function SummaryView({
           <View style={summaryStyles.catRow}>
             <View style={summaryStyles.catLeft}>
               <Text style={[summaryStyles.catName, { color: colors.foreground }]}>
-                Markup ({markup}%)
+                Materials Markup ({markup}%)
               </Text>
             </View>
             <Text style={[summaryStyles.catTotal, { color: colors.foreground }]}>
@@ -166,9 +167,10 @@ function DetailView({
     return acc;
   }, {});
 
-  const subtotal = grandTotal + (labor?.totalLaborCost ?? 0);
-  const markupAmount = Math.round(subtotal * (markup / 100) * 100) / 100;
-  const combinedTotal = Math.round((subtotal + markupAmount) * 100) / 100;
+  const materialsTotal = grandTotal;
+  const laborTotal = labor?.totalLaborCost ?? 0;
+  const markupAmount = Math.round(materialsTotal * (markup / 100) * 100) / 100;
+  const combinedTotal = Math.round((materialsTotal + markupAmount + laborTotal) * 100) / 100;
 
   const handleInputChange = (text: string) => {
     setInputVal(text);
@@ -197,7 +199,7 @@ function DetailView({
               <Text style={detailStyles.cardHeaderTitle}>Labor Estimate</Text>
             </View>
             <Text style={detailStyles.cardHeaderAmt}>
-              ${labor.totalLaborCost.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              ${laborTotal.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </Text>
           </View>
           <View style={[detailStyles.noteRow, { backgroundColor: colors.accent, borderBottomColor: colors.border }]}>
@@ -279,7 +281,7 @@ function DetailView({
       <View style={[summaryStyles.markupCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <View style={[summaryStyles.markupHeader, { borderBottomColor: colors.border }]}>
           <Feather name="percent" size={13} color={colors.primary} />
-          <Text style={[summaryStyles.markupTitle, { color: colors.foreground }]}>Markup / Margin</Text>
+          <Text style={[summaryStyles.markupTitle, { color: colors.foreground }]}>Materials Markup</Text>
           <View style={[summaryStyles.markupInputWrap, { borderColor: colors.border, backgroundColor: colors.muted }]}>
             <TextInput
               style={[summaryStyles.markupInput, { color: colors.foreground }]}
@@ -319,7 +321,7 @@ function DetailView({
       {markup > 0 && (
         <View style={[detailStyles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={[detailStyles.catHeader, { borderBottomColor: "transparent" }]}>
-            <Text style={[detailStyles.catTitle, { color: colors.foreground }]}>Markup ({markup}%)</Text>
+            <Text style={[detailStyles.catTitle, { color: colors.foreground }]}>Materials Markup ({markup}%)</Text>
             <Text style={[detailStyles.catTotal, { color: colors.foreground }]}>
               +${markupAmount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </Text>
@@ -330,7 +332,7 @@ function DetailView({
       {/* Combined total */}
       <View style={[detailStyles.totalRow, { backgroundColor: colors.primary }]}>
         <Text style={detailStyles.totalLabel}>
-          {labor ? "Total Quote (Materials + Labor)" : "Materials Total"}
+          {labor ? "Total Quote (Materials + Markup + Labor)" : "Materials Total"}
         </Text>
         <Text style={detailStyles.totalAmt}>
           ${combinedTotal.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
