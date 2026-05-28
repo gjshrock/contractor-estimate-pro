@@ -1,22 +1,42 @@
 {
   "expo": {
     "name": "Phase 1",
-    "slug": "phase-one",
-
-    "ios": {
-      "bundleIdentifier": "com.gjshrock.phaseone",
-      "supportsTablet": false,
-      "buildNumber": "1"
-    },
-
-    "android": {
-      "package": "com.gjshrock.phaseone"
-    },
-
+    "slug": "phase1",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "mobile",
-    "userInterfaceStyle": "automatic"
+    "scheme": "phase1",
+    "userInterfaceStyle": "automatic",
+
+    "splash": {
+      "image": "./assets/images/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0F1216"
+    },
+
+    "assetBundlePatterns": ["**/*"],
+
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.gjshrock.phase1"
+    },
+
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/icon.png",
+        "backgroundColor": "#0F1216"
+      },
+      "package": "com.gjshrock.phase1"
+    },
+
+    "web": {
+      "bundler": "metro"
+    },
+
+    "plugins": ["expo-router"],
+
+    "experiments": {
+      "typedRoutes": true
+    }
   }
 }

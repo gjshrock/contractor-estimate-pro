@@ -45,11 +45,16 @@ export default function RootLayout() {
     Inter_700Bold,
   });
 
-  useEffect(() => {
+ useEffect(() => {
+  async function hideSplash() {
     if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync();
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, fontError]);
+  }
+
+  hideSplash();
+}, [fontsLoaded, fontError]);
 
   if (!fontsLoaded && !fontError) return null;
 
