@@ -181,10 +181,13 @@ if (paintingMatch) {
 
 const flooringMatch =
   lowerPrompt.includes("flooring") ||
+  lowerPrompt.includes("floor") ||
+  lowerPrompt.includes("hardwood") ||
+  lowerPrompt.includes("wood floor") ||
   lowerPrompt.includes("vinyl plank") ||
+  lowerPrompt.includes("vinyl") || 
   lowerPrompt.includes("lvp") ||
   lowerPrompt.includes("laminate");
-
 if (flooringMatch) {
   const sqFtMatch = lowerPrompt.match(/(\d+)\s*(sq ft|square feet|sf)/);
 
