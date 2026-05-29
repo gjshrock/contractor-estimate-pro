@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { estimateDrywall } from "../lib/estimators/drywall";
+import { estimatePainting } from "../lib/estimators/painting";
 
 const router = Router();
 
@@ -141,6 +142,27 @@ if (drywallMatch) {
 
   const estimate = estimateDrywall({
     areaSqFt,
+    includeLabor: hasLabor,
+    hourlyRate,
+    yearsExperience,
+  });
+
+  res.json(estimate);
+  return;
+}
+
+const paintingMatch =
+  lowerPrompt.includes("paint") ||
+  lowerPrompt.includes("painting");
+
+if (paintingMatch) {
+  const sqFtMatch = lowerPrompt.match(/(\d+)\s*(sq ft|square feet|sf)/);
+
+  const areaSqFt = sqFtMatch ? parseInt(sqFtMatch[1], 10) : 500;
+
+  const estimate = estimatePainting({
+    wallAreaSqFt: areaSqFt,
+    coats: 2,
     includeLabor: hasLabor,
     hourlyRate,
     yearsExperience,
