@@ -7,7 +7,7 @@ import {
   estimateTrim,
   estimateFraming,
 } from "../lib/estimators/common";
-
+import { estimateDeck } from "../lib/estimators/deck";
 
 const router = Router();
 
@@ -245,6 +245,28 @@ if (framingMatch) {
     includeLabor: hasLabor,
     hourlyRate,
     yearsExperience,
+  });
+
+  res.json(estimate);
+  return;
+}
+
+const deckMatch =
+  lowerPrompt.includes("deck") ||
+  lowerPrompt.includes("decking");
+
+if (deckMatch) {
+  const dimensionMatch = lowerPrompt.match(/(\d+)\s*[x×]\s*(\d+)/);
+
+  const lengthFt = dimensionMatch ? parseInt(dimensionMatch[1], 10) : 12;
+  const widthFt = dimensionMatch ? parseInt(dimensionMatch[2], 10) : 16;
+
+  const estimate = estimateDeck({
+    lengthFt,
+    widthFt,
+    includeLabor: hasLabor,
+    hourlyRate: hourlyRate ?? 0,
+    yearsExperience: yearsExperience ?? 0,
   });
 
   res.json(estimate);
