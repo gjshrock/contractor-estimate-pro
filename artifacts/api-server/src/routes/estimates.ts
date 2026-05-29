@@ -2,6 +2,12 @@ import { Router } from "express";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { estimateDrywall } from "../lib/estimators/drywall";
 import { estimatePainting } from "../lib/estimators/painting";
+import {
+  estimateFlooring,
+  estimateTrim,
+  estimateFraming,
+} from "../lib/estimators/common";
+
 
 const router = Router();
 
@@ -171,6 +177,80 @@ if (paintingMatch) {
   res.json(estimate);
   return;
 }
+
+
+const flooringMatch =
+  lowerPrompt.includes("flooring") ||
+  lowerPrompt.includes("vinyl plank") ||
+  lowerPrompt.includes("lvp") ||
+  lowerPrompt.includes("laminate");
+
+if (flooringMatch) {
+  const sqFtMatch = lowerPrompt.match(/(\d+)\s*(sq ft|square feet|sf)/);
+
+  const areaSqFt = sqFtMatch ? parseInt(sqFtMatch[1], 10) : 500;
+
+  const estimate = estimateFlooring({
+    areaSqFt,
+    includeLabor: hasLabor,
+    hourlyRate,
+    yearsExperience,
+  });
+
+  res.json(estimate);
+  return;
+}
+
+const trimMatch =
+  lowerPrompt.includes("trim") ||
+  lowerPrompt.includes("baseboard") ||
+  lowerPrompt.includes("crown molding");
+
+if (trimMatch) {
+  const linearFeetMatch = lowerPrompt.match(
+    /(\d+)\s*(linear feet|lf|ft)/
+  );
+
+  const linearFeet = linearFeetMatch
+    ? parseInt(linearFeetMatch[1], 10)
+    : 120;
+
+  const estimate = estimateTrim({
+    linearFeet,
+    includeLabor: hasLabor,
+    hourlyRate,
+    yearsExperience,
+  });
+
+  res.json(estimate);
+  return;
+}
+
+const framingMatch =
+  lowerPrompt.includes("frame") ||
+  lowerPrompt.includes("framing") ||
+  lowerPrompt.includes("wall framing");
+
+if (framingMatch) {
+  const wallFeetMatch = lowerPrompt.match(
+    /(\d+)\s*(linear feet|lf|ft)/
+  );
+
+  const wallLengthFt = wallFeetMatch
+    ? parseInt(wallFeetMatch[1], 10)
+    : 16;
+
+  const estimate = estimateFraming({
+    wallLengthFt,
+    includeLabor: hasLabor,
+    hourlyRate,
+    yearsExperience,
+  });
+
+  res.json(estimate);
+  return;
+}
+
 
   try {
     const completion = await openai.chat.completions.create({
