@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { openai } from "@workspace/integrations-openai-ai-server";
+import { estimateDrywall } from "../lib/estimators/drywall";
 
 const router = Router();
 
@@ -125,6 +126,29 @@ Rules:
 - Make sure the final answer can be parsed by JSON.parse with no cleanup required${laborContext}`;
 
   const userPrompt = `Generate a detailed estimate for this job: ${jobDescription.trim()}${locationContext}`;
+
+const lowerPrompt = jobDescription.toLowerCase();
+
+const drywallMatch =
+  lowerPrompt.includes("drywall") ||
+  lowerPrompt.includes("sheetrock") ||
+  lowerPrompt.includes("gypsum");
+
+if (drywallMatch) {
+  const sqFtMatch = lowerPrompt.match(/(\d+)\s*(sq ft|square feet|sf)/);
+
+  const areaSqFt = sqFtMatch ? parseInt(sqFtMatch[1], 10) : 200;
+
+  const estimate = estimateDrywall({
+    areaSqFt,
+    includeLabor: hasLabor,
+    hourlyRate,
+    yearsExperience,
+  });
+
+  res.json(estimate);
+  return;
+}
 
   try {
     const completion = await openai.chat.completions.create({
