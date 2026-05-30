@@ -10,7 +10,7 @@ function laborMultiplier(yearsExperience: number) {
   return 0.75;
 }
 
-export type FlooringType = "hardwood" | "lvp" | "laminate";
+export type FlooringType = "hardwood" | "lvp" | "laminate" | "tile";
 
 export function estimateFlooring({
   areaSqFt,

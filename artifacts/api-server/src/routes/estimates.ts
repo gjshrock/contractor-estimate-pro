@@ -120,7 +120,9 @@ router.post("/estimates/generate", async (req, res) => {
     lowerPrompt.includes("laminate");
 
   if (flooringMatch) {
-    const flooringType = lowerPrompt.includes("hardwood") || lowerPrompt.includes("wood floor")
+    const flooringType = lowerPrompt.includes("tile") || lowerPrompt.includes("ceramic") || lowerPrompt.includes("porcelain")
+      ? "tile"
+      : lowerPrompt.includes("hardwood") || lowerPrompt.includes("wood floor")
       ? "hardwood"
       : lowerPrompt.includes("laminate")
       ? "laminate"
