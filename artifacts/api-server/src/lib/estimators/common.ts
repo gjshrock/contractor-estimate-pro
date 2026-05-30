@@ -27,6 +27,152 @@ export function estimateFlooring({
 }) {
   const flooringSqFt = Math.ceil(areaSqFt * 1.1);
 
+  const materials =
+    flooringType === "tile"
+      ? buildTileFlooringMaterials(areaSqFt, flooringSqFt)
+      : buildNonTileFlooringMaterials(areaSqFt, flooringSqFt, flooringType);
+
+  const grandTotal = round(materials.reduce((s, m) => s + m.totalPrice, 0));
+
+  const baseHours = round(
+    flooringType === "tile" ? Math.max(8, areaSqFt / 25) : Math.max(4, areaSqFt / 45)
+  );
+
+  const multiplier = laborMultiplier(yearsExperience);
+  const adjustedHours = round(baseHours * multiplier);
+
+  return {
+    jobSummary: `${getFlooringLabel(flooringType)} installation estimate for ${areaSqFt} sq ft.`,
+    materials,
+    grandTotal,
+    laborEstimate: includeLabor
+      ? {
+          baseHours,
+          experienceMultiplier: multiplier,
+          adjustedHours,
+          totalLaborCost: round(adjustedHours * hourlyRate),
+          breakdown:
+            flooringType === "tile"
+              ? [
+                  { task: "Prep floor and install backer board", hours: round(adjustedHours * 0.3) },
+                  { task: "Set tile with thinset", hours: round(adjustedHours * 0.4) },
+                  { task: "Grout tile", hours: round(adjustedHours * 0.2) },
+                  { task: "Cleanup and final wipe-down", hours: round(adjustedHours * 0.1) },
+                ]
+              : [
+                  { task: "Prep floor", hours: round(adjustedHours * 0.2) },
+                  { task: "Install flooring", hours: round(adjustedHours * 0.6) },
+                  { task: "Transitions and cleanup", hours: round(adjustedHours * 0.2) },
+                ],
+          experienceNote: `Labor adjusted using ${yearsExperience} year${
+            yearsExperience === 1 ? "" : "s"
+          } experience.`,
+        }
+      : null,
+    disclaimer:
+      "Estimate pricing may vary by region. Flooring estimate assumes basic installation with no major subfloor repair, demo, stairs, pattern work, or furniture moving unless specified.",
+  };
+}
+
+function buildTileFlooringMaterials(areaSqFt: number, flooringSqFt: number) {
+  const hardieSheets = Math.ceil(areaSqFt / 15);
+  const thinsetBags = Math.max(1, Math.ceil(areaSqFt / 80));
+  const groutBags = Math.max(1, Math.ceil(areaSqFt / 250));
+  const screwBoxes = Math.max(1, Math.ceil(areaSqFt / 300));
+
+  return [
+    {
+      id: "mat-1",
+      name: "Tile flooring",
+      description: "Ceramic or porcelain floor tile",
+      category: "Flooring",
+      quantity: flooringSqFt,
+      unit: "sq ft",
+      unitPrice: 2.98,
+      totalPrice: round(flooringSqFt * 2.98),
+      storeName: "Home Depot",
+      notes: "Includes 10% waste",
+    },
+    {
+      id: "mat-2",
+      name: "HardieBacker cement board",
+      description: "1/4 in. cement backer board for tile flooring",
+      category: "Underlayment",
+      quantity: hardieSheets,
+      unit: "sheets",
+      unitPrice: 14.98,
+      totalPrice: round(hardieSheets * 14.98),
+      storeName: "Lowe's",
+      notes: "Assumes wood subfloor",
+    },
+    {
+      id: "mat-3",
+      name: "Thinset mortar",
+      description: "Polymer-modified thinset mortar",
+      category: "Mortar",
+      quantity: thinsetBags,
+      unit: "bags",
+      unitPrice: 18.98,
+      totalPrice: round(thinsetBags * 18.98),
+      storeName: "Home Depot",
+      notes: null,
+    },
+    {
+      id: "mat-4",
+      name: "Grout",
+      description: "Sanded grout for tile joints",
+      category: "Grout",
+      quantity: groutBags,
+      unit: "bags",
+      unitPrice: 16.98,
+      totalPrice: round(groutBags * 16.98),
+      storeName: "Lowe's",
+      notes: null,
+    },
+    {
+      id: "mat-5",
+      name: "Tile spacers",
+      description: "Reusable tile spacers",
+      category: "Supplies",
+      quantity: 1,
+      unit: "pack",
+      unitPrice: 7.98,
+      totalPrice: 7.98,
+      storeName: "Home Depot",
+      notes: null,
+    },
+    {
+      id: "mat-6",
+      name: "Backer board screws",
+      description: "Corrosion-resistant cement board screws",
+      category: "Fasteners",
+      quantity: screwBoxes,
+      unit: "box",
+      unitPrice: 12.98,
+      totalPrice: round(screwBoxes * 12.98),
+      storeName: "Lowe's",
+      notes: null,
+    },
+    {
+      id: "mat-7",
+      name: "Alkali-resistant seam tape",
+      description: "Fiberglass tape for cement board seams",
+      category: "Supplies",
+      quantity: 1,
+      unit: "roll",
+      unitPrice: 8.98,
+      totalPrice: 8.98,
+      storeName: "Home Depot",
+      notes: null,
+    },
+  ];
+}
+
+function buildNonTileFlooringMaterials(
+  areaSqFt: number,
+  flooringSqFt: number,
+  flooringType: FlooringType
+) {
   let flooringName = "LVP flooring";
   let flooringDescription = "Luxury vinyl plank flooring";
   let flooringPrice = 3.49;
@@ -49,7 +195,9 @@ export function estimateFlooring({
     underlaymentDescription = "Laminate flooring underlayment";
   }
 
-  const materials = [
+  const fastenerQuantity = flooringType === "hardwood" ? Math.max(1, Math.ceil(areaSqFt / 400)) : 1;
+
+  return [
     {
       id: "mat-1",
       name: flooringName,
@@ -76,6 +224,21 @@ export function estimateFlooring({
     },
     {
       id: "mat-3",
+      name: flooringType === "hardwood" ? "Hardwood flooring cleats" : "Flooring installation spacers",
+      description:
+        flooringType === "hardwood"
+          ? "Flooring cleats/nails for hardwood installation"
+          : "Spacers for floating floor installation",
+      category: "Fasteners",
+      quantity: fastenerQuantity,
+      unit: flooringType === "hardwood" ? "box" : "pack",
+      unitPrice: flooringType === "hardwood" ? 42.98 : 7.98,
+      totalPrice: round(fastenerQuantity * (flooringType === "hardwood" ? 42.98 : 7.98)),
+      storeName: "Home Depot",
+      notes: flooringType === "hardwood" ? "Estimated fasteners for nail-down hardwood" : null,
+    },
+    {
+      id: "mat-4",
       name: "Flooring transition strips",
       description: "Basic transition strips for doorway/opening edges",
       category: "Flooring",
@@ -86,55 +249,14 @@ export function estimateFlooring({
       storeName: "Lowe's",
       notes: null,
     },
-    {
-      id: "mat-4",
-      name: flooringType === "hardwood" ? "Hardwood flooring cleats" : "Flooring installation spacers",
-      description:
-        flooringType === "hardwood"
-          ? "Flooring cleats/nails for hardwood installation"
-           : "Spacers for floating floor installation",
-      category: "Fasteners",
-      quantity: flooringType === "hardwood" ? Math.max(1, Math.ceil(areaSqFt / 400)) : 1,
-      unit: flooringType === "hardwood" ? "box" : "pack",
-      unitPrice: flooringType === "hardwood" ? 42.98 : 7.98,
-      totalPrice: round(
-        (flooringType === "hardwood" ? Math.max(1, Math.ceil(areaSqFt / 400)) : 1) *
-          (flooringType === "hardwood" ? 42.98 : 7.98)
-      ),
-      storeName: "Home Depot",
-      notes: flooringType === "hardwood" ? "Estimated fasteners for nail-down hardwood" : null,
-    }
   ];
+}
 
-  const grandTotal = round(materials.reduce((s, m) => s + m.totalPrice, 0));
-
-  const baseHours = round(Math.max(4, areaSqFt / 45));
-  const multiplier = laborMultiplier(yearsExperience);
-  const adjustedHours = round(baseHours * multiplier);
-
-  return {
-    jobSummary: `${flooringName} installation estimate for ${areaSqFt} sq ft.`,
-    materials,
-    grandTotal,
-    laborEstimate: includeLabor
-      ? {
-          baseHours,
-          experienceMultiplier: multiplier,
-          adjustedHours,
-          totalLaborCost: round(adjustedHours * hourlyRate),
-          breakdown: [
-            { task: "Prep floor", hours: round(adjustedHours * 0.2) },
-            { task: "Install flooring", hours: round(adjustedHours * 0.6) },
-            { task: "Transitions and cleanup", hours: round(adjustedHours * 0.2) },
-          ],
-          experienceNote: `Labor adjusted using ${yearsExperience} year${
-            yearsExperience === 1 ? "" : "s"
-          } experience.`,
-        }
-      : null,
-    disclaimer:
-      "Estimate pricing may vary by region. Flooring estimate assumes basic installation with no major subfloor repair, demo, stairs, pattern work, or furniture moving unless specified.",
-  };
+function getFlooringLabel(flooringType: FlooringType) {
+  if (flooringType === "hardwood") return "Hardwood flooring";
+  if (flooringType === "laminate") return "Laminate flooring";
+  if (flooringType === "tile") return "Tile flooring";
+  return "LVP flooring";
 }
 
 export function estimateTrim({
