@@ -86,6 +86,24 @@ export function estimateFlooring({
       storeName: "Lowe's",
       notes: null,
     },
+    {
+      id: "mat-4",
+      name: flooringType === "hardwood" ? "Hardwood flooring cleats" : "Flooring installation spacers",
+      description:
+        flooringType === "hardwood"
+          ? "Flooring cleats/nails for hardwood installation"
+           : "Spacers for floating floor installation",
+      category: "Fasteners",
+      quantity: flooringType === "hardwood" ? Math.max(1, Math.ceil(areaSqFt / 400)) : 1,
+      unit: flooringType === "hardwood" ? "box" : "pack",
+      unitPrice: flooringType === "hardwood" ? 42.98 : 7.98,
+      totalPrice: round(
+        (flooringType === "hardwood" ? Math.max(1, Math.ceil(areaSqFt / 400)) : 1) *
+          (flooringType === "hardwood" ? 42.98 : 7.98)
+      ),
+      storeName: "Home Depot",
+      notes: flooringType === "hardwood" ? "Estimated fasteners for nail-down hardwood" : null,
+    }
   ];
 
   const grandTotal = round(materials.reduce((s, m) => s + m.totalPrice, 0));
